@@ -167,7 +167,8 @@ document.getElementById('pin').onclick=async()=>{
 };
 document.getElementById('list').innerHTML=(APPS||[]).map((a,i)=>{
   const meta=[a.version?'إصدار '+a.version:'',a.size,a.url?'':'قريباً'].filter(Boolean).join(' · ');
-  return `<a class="arow" style="--i:${i}" href="${esc(a.page)}">
+  const dest=a.page||a.url||'';
+  return `<a class="arow" style="--i:${i}" href="${esc(dest)}"${a.page?'':' download'}>
     <span class="aic"><img src="${esc(a.icon)}" alt=""></span>
     <span class="atx"><span class="anm">${esc(a.name)}</span>
     <span class="ads">${esc(a.desc||'')}</span>
