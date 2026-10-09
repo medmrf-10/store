@@ -56,6 +56,7 @@ data class AppEntry(
     val slug: String = "", val name: String = "", val page: String = "",
     val icon: String = "", val tag: String = "", val desc: String = "",
     val version: String = "", val size: String = "", val url: String = "",
+    val vcode: Int = 0,
 )
 
 val Bg = Color(0xFF14110E); val Card = Color(0xFF1C1814); val Txt = Color(0xFFEFE6D6)
@@ -108,9 +109,18 @@ fun StoreApp() {
             var apps by remember { mutableStateOf<List<AppEntry>?>(null) }
             var err by remember { mutableStateOf(false) }
             var sel by remember { mutableStateOf<AppEntry?>(null) }
+            var upd by remember { mutableStateOf<AppEntry?>(null) }
             val scope = rememberCoroutineScope()
+            val ctx = LocalContext.current
             fun reload() { scope.launch { runCatching { apps = fetchCatalog() }.onFailure { err = true } } }
-            LaunchedEffect(Unit) { reload() }
+            LaunchedEffect(Unit) {
+                reload()
+                val vc = runCatching {
+                    @Suppress("DEPRECATION")
+                    ctx.packageManager.getPackageInfo(ctx.packageName, 0).longVersionCode.toInt()
+                }.getOrDefault(0)
+                runCatching { upd = fetchCatalog().firstOrNull { it.slug == "appstore" && it.vcode > vc && it.url.isNotEmpty() } }
+            }
 
             Scaffold(containerColor = Bg, topBar = { StoreBar() }) { pad ->
                 Box(Modifier.fillMaxSize().padding(pad)) {
@@ -125,6 +135,17 @@ fun StoreApp() {
                             }
                         }
                         else -> AppList(apps!!) { sel = it }
+                    }
+                    upd?.let { u ->
+                        Surface(
+                            Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(16.dp),
+                            color = Card, shape = RoundedCornerShape(12.dp), border = androidx.compose.foundation.BorderStroke(1.dp, Gold),
+                        ) {
+                            Row(Modifier.padding(horizontal = 14.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Text("تحديث المتجر متاح — ${u.version}", color = Gold, modifier = Modifier.weight(1f), fontSize = 14.sp)
+                                TextButton(onClick = { downloadApk(ctx, u); upd = null }) { Text("نزّل الآن", color = Primary) }
+                            }
+                        }
                     }
                 }
             }
