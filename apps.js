@@ -3,5 +3,5 @@ const APPS=[
  {slug:'mirath',name:'ميراث',page:'mirath/',icon:'mirath/icons/icon-192.png',
   tag:'جديد',
   desc:'تطبيق «إرث» لأندرويد — مكتبة الدروس والسلاسل العلمية في جيبك، بقراءة متزامنة مع الصوت وبلا اتصال.',
-  version:'',size:'',url:''}
+  version:'1.0',size:'18.6 MB',url:'mirath/'}
 ];
