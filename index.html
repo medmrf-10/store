@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="night">
+<head>
+<script>try{document.documentElement.dataset.theme=localStorage.getItem('irth.theme')||'night'}catch(e){}</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#14110E">
+<title>ميراث — تطبيق إرث لأندرويد</title>
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Noto+Naskh+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --s-1:4px;--s-2:8px;--s-3:12px;--s-4:16px;--s-5:20px;--s-6:24px;
+  --r-1:12px;--r-2:16px;--r-3:18px;--r-pill:999px;
+  --font-display:'Amiri',serif;--font-body:'Noto Naskh Arabic',serif;
+  --dur-1:150ms;--dur-2:300ms;--ease:cubic-bezier(0.22,0.61,0.36,1);
+  --app-max:560px;--touch:44px;
+}
+:root,[data-theme='night']{
+  --bg:#14110e;--card:#1c1814;--text:#efe6d6;--muted:#a39684;--line:#2f2923;
+  --primary:#e3a598;--gold:#c9a35c;--soft:#2a241e;--press:#241f1a;
+  --glass:rgba(20,17,14,.9);color-scheme:dark;
+}
+[data-theme='paper']{
+  --bg:#f4eee2;--card:#fbf7ef;--text:#2a241d;--muted:#8a7e6e;--line:#e5dac6;
+  --primary:#7b2d26;--gold:#ae8848;--soft:#eadfcb;--press:#f2eadb;
+  --glass:rgba(244,238,226,.9);color-scheme:light;
+}
+[data-theme='white']{
+  --bg:#ffffff;--card:#f0f2f5;--text:#050505;--muted:#65676b;--line:#ced0d4;
+  --primary:#7b2d26;--gold:#ae8848;--soft:#e4e6eb;--press:#f0f2f5;
+  --glass:rgba(255,255,255,.92);color-scheme:light;
+}
+[data-theme='dark']{
+  --bg:#18191a;--card:#242526;--text:#e4e6eb;--muted:#b0b3b8;--line:#3e4042;
+  --primary:#e3a598;--gold:#c9a35c;--soft:#3a3b3c;--press:#2d2e2f;
+  --glass:rgba(24,25,26,.92);color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:16px}
+a{color:var(--primary)}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+
+.app{min-height:100dvh;max-width:var(--app-max);margin:0 auto;padding:0 0 48px}
+
+.top{position:fixed;top:0;left:50%;transform:translateX(-50%);width:min(100%,var(--app-max));z-index:6;display:flex;flex-direction:column;
+  padding-top:env(safe-area-inset-top);
+  background:var(--glass);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+.trow{display:flex;align-items:center;justify-content:space-between;height:52px;padding:0 16px 0 6px}
+main{display:block;padding-top:calc(56px + env(safe-area-inset-top))}
+.brand{display:flex;align-items:center;gap:10px;color:inherit;text-decoration:none}
+.brand img{width:30px;height:30px;border-radius:9px}
+.brand b{font:700 25px/1 var(--font-display);color:var(--primary)}
+.ib{flex:none;width:44px;height:44px;display:grid;place-items:center;border-radius:50%;
+  color:var(--muted);border:0;background:none;font:inherit;cursor:pointer}
+.ib:active{background:var(--press)}
+.themes{position:fixed;z-index:9;left:10px;top:calc(56px + env(safe-area-inset-top));min-width:170px;padding:6px;
+  background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:0 12px 30px rgba(0,0,0,.18);animation:fade .15s ease-out}
+.themes button{display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border:0;border-radius:10px;
+  background:none;color:inherit;font:inherit;font-size:15px;text-align:right;cursor:pointer}
+.themes button[aria-pressed='true']{background:var(--press);font-weight:600}
+.themes i{flex:none;width:22px;height:22px;border-radius:50%;border:1px solid rgba(127,127,127,.35)}
+
+/* بطل الصفحة */
+.hero{text-align:center;padding:34px 20px 8px;animation:rise .5s var(--ease) both}
+.iphone{width:96px;height:96px;margin:0 auto 14px;border-radius:26px;overflow:hidden;display:grid;place-items:center;
+  background:var(--soft);color:var(--primary);
+  box-shadow:0 0 0 2px var(--card),0 0 0 3.5px var(--gold),0 14px 34px rgba(0,0,0,.25)}
+.iphone img{width:100%;height:100%;object-fit:cover}
+.iphone b{font:700 44px/1 var(--font-display)}
+.hero h1{font:700 40px/1.25 var(--font-display);margin:0;color:var(--text)}
+.hero .tag{margin:10px auto 0;max-width:420px;color:var(--muted);font-size:15.5px;line-height:1.9}
+.vline{margin-top:10px;color:var(--gold);font-size:12.5px}
+.dl{display:inline-flex;align-items:center;gap:10px;height:54px;margin:22px auto 0;padding:0 30px;border-radius:var(--r-pill);
+  background:var(--primary);color:var(--card);font:inherit;font-size:17px;font-weight:600;cursor:pointer;text-decoration:none;border:0;
+  animation:up .5s var(--ease) .1s both}
+.dl svg{width:22px;height:22px}
+.dl:active{background:var(--press);color:var(--primary)}
+.dl.soon{background:var(--soft);color:var(--muted);cursor:default}
+.dl.soon:active{background:var(--soft)}
+.sub2{margin:10px 0 0;color:var(--muted);font-size:12px}
+.lnk{color:var(--primary);text-decoration:none}
+
+/* بطاقات المزايا */
+.gttl{margin:30px 16px 8px;color:var(--gold);font-size:13px;font-weight:700}
+.grid{margin:0 16px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.feat{background:var(--card);border:1px solid var(--line);border-radius:var(--r-2);padding:14px;animation:rise .45s var(--ease) both;animation-delay:calc(var(--i,0)*40ms)}
+.feat .ic{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:var(--soft);color:var(--gold);margin-bottom:10px}
+.feat .ic svg{width:20px;height:20px}
+.feat b{display:block;font:700 16px/1.4 var(--font-display);margin-bottom:2px}
+.feat span{color:var(--muted);font-size:12.5px;line-height:1.8}
+
+.note{margin:26px 16px 0;padding:14px 16px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-2);
+  color:var(--muted);font-size:13px;line-height:2}
+.note b{color:var(--text)}
+.foot{margin:30px 16px 0;text-align:center;color:var(--muted);font-size:12.5px;line-height:2}
+@media (max-width:380px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="trow">
+      <span class="brand"><img src="icons/icon-192.png" alt=""><b>إرث</b></span>
+      <button class="ib" id="b-theme" aria-label="الشكل"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.2 5.2l1.6 1.6M17.2 17.2l1.6 1.6M18.8 5.2l-1.6 1.6M6.8 17.2l-1.6 1.6"/></svg></button>
+    </div>
+  </header>
+  <div class="themes" id="themes" hidden>
+    <button data-t="night"><i style="background:#14110E"></i>ليل</button>
+    <button data-t="paper"><i style="background:#F4EEE2"></i>ورق</button>
+    <button data-t="white"><i style="background:#FFFFFF"></i>أبيض</button>
+    <button data-t="dark"><i style="background:#18191A"></i>داكن</button>
+  </div>
+  <main id="app">
+    <section class="hero">
+      <div class="iphone"><b>م</b></div>
+      <h1 id="aname">ميراث</h1>
+      <p class="tag" id="atag">تطبيق «إرث» لأندرويد — مكتبة الدروس والسلاسل العلمية في جيبك، بقراءة متزامنة مع الصوت وبلا اتصال.</p>
+      <div class="vline" id="aver"></div>
+      <a class="dl soon" id="adl" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v11M7.5 10.5 12 15l4.5-4.5M4.5 19h15"/></svg><span id="adlt">قريباً</span></a>
+      <p class="sub2" id="asub">سيُفعَّل التنزيل عند صدور الحزمة APK — تابعنا.</p>
+    </section>
+    <div class="gttl">ماذا يقدم لك ميراث</div>
+    <div class="grid" id="grid"></div>
+    <div class="note"><b>التثبيت:</b> نزّل ملف APK ثم افتحه — قد يطلب أندرويد الإذن بالتثبيت من مصادر خارجية (الإعدادات ‹ الأمان ‹ مصادر غير معروفة).</div>
+    <p class="foot">ميراث — من مشروع <a class="lnk" href="https://medmrf-10.github.io/irth/">إرث</a> · محتوى علمي موثوق في جيبك</p>
+  </main>
+</div>
+<script>
+/* ==== عدّل هنا عند صدور الحزمة ==== */
+const APP={
+  name:'ميراث',
+  version:'',          /* مثال: '1.0.0' */
+  size:'',             /* مثال: '18 MB' */
+  url:'',              /* ضع رابط الـAPK المباشر هنا ليتفعّل الزر */
+  btn:'تنزيل APK'
+};
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const FEATS=[
+ {t:'مكتبة السلاسل',d:'سلاسل العلماء مرتبة بالعلوم — السيرة، العقيدة، التزكية، السنن وغيرها.',ic:'<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 1 6.5 18H20"/>'},
+ {t:'قراءة متزامنة',d:'نص التفريغ يضيء كلمةً كلمة مع الصوت — تتبع القارئ كالكاريوكي.',ic:'<circle cx="12" cy="12" r="8.5"/><path d="M10 8.5l5 3.5-5 3.5z" fill="currentColor" stroke="none"/>'},
+ {t:'مفضلة واستئناف',d:'أضف دروسك للمفضلة، وأكمل من حيث توقفت بسجلّ التقدم.',ic:'<path d="m12 3.5 2.6 5.3 5.9.9-4.25 4.1 1 5.8L12 16.9l-5.25 2.7 1-5.8L3.5 9.7l5.9-.9Z"/>'},
+ {t:'ملخصات وأسئلة',d:'لكل درس ملخص بنقاطه، وأسئلة سيناريو تختبر فهمك وتطبيقك.',ic:'<circle cx="12" cy="12" r="8.5"/><path d="M9.7 9.2a2.4 2.4 0 0 1 4.7.6c0 1.6-2.2 2-2.2 3.3"/><circle cx="12.15" cy="16.6" r="0.5" fill="currentColor" stroke="none"/>'},
+ {t:'أربعة مظاهر',d:'ليل وورق وأبيض وداكن — واجهة عربية كاملة يميناً إلى يسار.',ic:'<circle cx="12" cy="12" r="8.5"/><path d="M12 3.5a8.5 8.5 0 0 1 0 17z" fill="currentColor"/>'},
+ {t:'خفيف وسريع',d:'لا حساب ولا إعلانات — افتح التطبيق واستمع مباشرة.',ic:'<path d="M13 2 4.5 13.5H11l-1 8.5 8.5-11.5H12z"/>'}
+];
+const TH=document.getElementById('themes');
+const saved=localStorage.getItem('irth.theme')||'night';
+document.querySelectorAll('#themes button').forEach(b=>{
+  b.setAttribute('aria-pressed',b.dataset.t===saved?'true':'false');
+  b.onclick=e=>{e.stopPropagation();document.documentElement.dataset.theme=b.dataset.t;localStorage.setItem('irth.theme',b.dataset.t);
+    document.querySelectorAll('#themes button').forEach(x=>x.setAttribute('aria-pressed',x===b?'true':'false'));TH.hidden=true};
+});
+document.getElementById('b-theme').onclick=e=>{e.stopPropagation();TH.hidden=!TH.hidden};
+document.addEventListener('click',e=>{if(!e.target.closest('#themes,#b-theme'))TH.hidden=true});
+(function(){
+  document.getElementById('aname').textContent=APP.name;
+  const meta=[APP.version?'إصدار '+APP.version:'',APP.size].filter(Boolean).join(' · ');
+  document.getElementById('aver').textContent=meta;
+  const dl=document.getElementById('adl');
+  if(APP.url){dl.classList.remove('soon');dl.href=APP.url;
+    if(/^https?:/.test(APP.url)){dl.target='_blank';dl.rel='noopener'}
+    document.getElementById('adlt').textContent=APP.btn||'تنزيل';
+    document.getElementById('asub').textContent='ملف APK — نزّله ثم افتحه على جهازك'}
+  document.getElementById('grid').innerHTML=FEATS.map((f,i)=>
+    `<div class="feat" style="--i:${i}"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${f.ic}</svg></span><b>${esc(f.t)}</b><span>${esc(f.d)}</span></div>`).join('');
+})();
+</script>
+</body>
+</html>
