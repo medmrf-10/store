@@ -23,7 +23,7 @@ jobs:
           mkdir -p dist
           cp index.html dist/index.html
           cp index.html dist/404.html
-          cp apps.js dist/
+          cp apps.js manifest.webmanifest sw.js dist/
           cp -r icons mirath dist/
       - uses: actions/upload-pages-artifact@v3
         with:

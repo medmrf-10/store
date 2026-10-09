@@ -5,7 +5,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#14110E">
-<link rel="manifest" href="manifest.webmanifest">
 <title>ميراث — تطبيق إرث لأندرويد</title>
 <link rel="icon" href="icons/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
@@ -150,13 +149,6 @@ main{display:block;padding-top:calc(56px + env(safe-area-inset-top))}
     <p class="foot">ميراث — من مشروع <a class="lnk" href="https://medmrf-10.github.io/irth/">إرث</a> · محتوى علمي موثوق في جيبك</p>
   </main>
 </div>
-<div class="pb" id="pb" hidden>
-  <img src="icons/icon-192.png" alt="">
-  <div class="pt"><b>ثبّت ميراث على جهازك</b><span>افتحه من شاشتك الرئيسية بلمسة واحدة</span></div>
-  <button class="pin" id="pin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v11M7.5 10.5 12 15l4.5-4.5M4.5 19h15"/></svg>تثبيت</button>
-  <button class="px" id="px" aria-label="إغلاق"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
-</div>
-<div class="tost" id="tost"></div>
 <script>
 /* ==== عدّل هنا عند صدور الحزمة ==== */
 const APP={
@@ -184,20 +176,6 @@ document.querySelectorAll('#themes button').forEach(b=>{
 });
 document.getElementById('b-theme').onclick=e=>{e.stopPropagation();TH.hidden=!TH.hidden};
 document.addEventListener('click',e=>{if(!e.target.closest('#themes,#b-theme'))TH.hidden=true});
-/* — تثبيت التطبيق — */
-let DEFER=null;
-window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();DEFER=e});
-if('serviceWorker' in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('sw.js').catch(()=>{});
-const PB=document.getElementById('pb'),TOST=document.getElementById('tost');
-function toast(t){TOST.textContent=t;TOST.classList.add('show');setTimeout(()=>TOST.classList.remove('show'),2200)}
-function installed(){return matchMedia('(display-mode: standalone)').matches||navigator.standalone===true}
-try{if(!installed()&&localStorage.getItem('mirath.pb.dismiss')!=='1'){setTimeout(()=>{PB.hidden=false;requestAnimationFrame(()=>PB.classList.add('show'))},1400)}}catch(e){}
-document.getElementById('px').onclick=()=>{PB.classList.remove('show');setTimeout(()=>PB.hidden=true,300);try{localStorage.setItem('mirath.pb.dismiss','1')}catch(e){}};
-document.getElementById('pin').onclick=async()=>{
-  if(DEFER){DEFER.prompt();const r=await DEFER.userChoice;if(r.outcome==='accepted'){PB.classList.remove('show');setTimeout(()=>PB.hidden=true,300)}DEFER=null;return}
-  if(APP.url){location.href=APP.url;return}
-  toast('سيُتاح ملف APK قريباً بإذن الله');
-};
 (function(){
   document.getElementById('aname').textContent=APP.name;
   const meta=[APP.version?'إصدار '+APP.version:'',APP.size].filter(Boolean).join(' · ');

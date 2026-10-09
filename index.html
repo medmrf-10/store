@@ -5,7 +5,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#14110E">
-<title>متجر إرث — تطبيقاتنا لأندرويد</title>
+<link rel="manifest" href="manifest.webmanifest">
+<title>App Store — تطبيقاتنا لأندرويد</title>
 <link rel="icon" href="icons/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -87,13 +88,32 @@ main{display:block;padding-top:calc(56px + env(safe-area-inset-top))}
 .empty{padding:46px 20px;text-align:center;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:var(--r-2)}
 .foot{margin:26px 16px 0;padding:14px 16px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-2);
   color:var(--muted);font-size:12.5px;line-height:1.9;text-align:center}
+/* لافتة التثبيت */
+.pb{position:fixed;z-index:8;left:50%;transform:translateX(-50%) translateY(120%);bottom:14px;width:min(calc(100% - 24px),calc(var(--app-max) - 24px));
+  display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--card);border:1px solid var(--gold);border-radius:18px;
+  box-shadow:0 14px 40px rgba(0,0,0,.35);transition:transform .3s var(--ease)}
+.pb.show{transform:translateX(-50%) translateY(0)}
+.pb img{width:44px;height:44px;border-radius:12px;flex:none}
+.pb .pt{flex:1;min-width:0}
+.pb .pt b{display:block;font:700 15px/1.4 var(--font-display)}
+.pb .pt span{color:var(--muted);font-size:12px}
+.pb .pin{flex:none;display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 16px;border-radius:var(--r-pill);
+  background:var(--primary);color:var(--card);font:inherit;font-size:13.5px;font-weight:600;cursor:pointer;border:0;text-decoration:none}
+.pb .pin svg{width:16px;height:16px}
+.pb .pin:active{background:var(--press);color:var(--primary)}
+.pb .px{flex:none;width:30px;height:30px;display:grid;place-items:center;border:0;border-radius:50%;background:none;color:var(--muted);cursor:pointer;padding:0}
+.pb .px:active{background:var(--press)}
+.pb .px svg{width:15px;height:15px}
+.tost{position:fixed;z-index:10;left:50%;bottom:90px;transform:translateX(-50%);padding:10px 18px;background:var(--card);border:1px solid var(--line);
+  border-radius:var(--r-pill);color:var(--text);font-size:13.5px;opacity:0;pointer-events:none;transition:opacity .2s}
+.tost.show{opacity:1}
 </style>
 </head>
 <body>
 <div class="app">
   <header class="top">
     <div class="trow">
-      <a class="brand" href="./"><img src="icons/icon-192.png" alt=""><b>متجر إرث</b></a>
+      <a class="brand" href="./"><img src="icons/icon-192.png" alt=""><b>App Store</b></a>
       <button class="ib" id="b-theme" aria-label="الشكل"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.2 5.2l1.6 1.6M17.2 17.2l1.6 1.6M18.8 5.2l-1.6 1.6M6.8 17.2l-1.6 1.6"/></svg></button>
     </div>
   </header>
@@ -113,6 +133,13 @@ main{display:block;padding-top:calc(56px + env(safe-area-inset-top))}
     <p class="foot">من مشروع <a href="https://medmrf-10.github.io/irth/">إرث</a> — محتوى علمي موثوق في جيبك</p>
   </main>
 </div>
+<div class="pb" id="pb" hidden>
+  <img src="icons/icon-192.png" alt="">
+  <div class="pt"><b>ثبّت App Store</b><span>متجرنا في شاشتك الرئيسية بلمسة واحدة</span></div>
+  <button class="pin" id="pin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v11M7.5 10.5 12 15l4.5-4.5M4.5 19h15"/></svg>تثبيت</button>
+  <button class="px" id="px" aria-label="إغلاق"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+</div>
+<div class="tost" id="tost"></div>
 <script src="apps.js"></script>
 <script>
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -125,6 +152,19 @@ document.querySelectorAll('#themes button').forEach(b=>{
 });
 document.getElementById('b-theme').onclick=e=>{e.stopPropagation();TH.hidden=!TH.hidden};
 document.addEventListener('click',e=>{if(!e.target.closest('#themes,#b-theme'))TH.hidden=true});
+/* — لافتة التثبيت — */
+let DEFER=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();DEFER=e});
+if('serviceWorker' in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('sw.js').catch(()=>{});
+const PB=document.getElementById('pb'),TOST=document.getElementById('tost');
+function toast(t){TOST.textContent=t;TOST.classList.add('show');setTimeout(()=>TOST.classList.remove('show'),2400)}
+function installed(){return matchMedia('(display-mode: standalone)').matches||navigator.standalone===true}
+try{if(!installed()&&localStorage.getItem('store.pb.dismiss')!=='1'){setTimeout(()=>{PB.hidden=false;requestAnimationFrame(()=>PB.classList.add('show'))},1400)}}catch(e){}
+document.getElementById('px').onclick=()=>{PB.classList.remove('show');setTimeout(()=>PB.hidden=true,300);try{localStorage.setItem('store.pb.dismiss','1')}catch(e){}};
+document.getElementById('pin').onclick=async()=>{
+  if(DEFER){DEFER.prompt();const r=await DEFER.userChoice;if(r.outcome==='accepted'){PB.classList.remove('show');setTimeout(()=>PB.hidden=true,300)}DEFER=null;return}
+  toast('من قائمة المتصفح اختر: إضافة إلى الشاشة الرئيسية');
+};
 document.getElementById('list').innerHTML=(APPS||[]).map((a,i)=>{
   const meta=[a.version?'إصدار '+a.version:'',a.size,a.url?'':'قريباً'].filter(Boolean).join(' · ');
   return `<a class="arow" style="--i:${i}" href="${esc(a.page)}">
