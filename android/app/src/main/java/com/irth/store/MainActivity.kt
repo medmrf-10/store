@@ -444,6 +444,9 @@ fun CatalogView(
                     Icon(Icons.Filled.SystemUpdate, null, tint = Gold, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(6.dp))
                     Text("تحديثات متاحة (${updates.size})", color = Gold, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.weight(1f))
+                    val pending = updates.filter { downloads[it.slug] == null }
+                    if (updates.size > 1 && pending.isNotEmpty()) SmallBtn("حدّث الكل (${pending.size})", accent = true) { pending.forEach(onDl) }
                 }
             }
             items(updates, key = { "u-" + it.slug }) { a ->
