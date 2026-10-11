@@ -1,6 +1,12 @@
 package com.irth.store
 
 import android.app.DownloadManager
+import android.Manifest
+import android.provider.Settings
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -60,7 +66,11 @@ data class AppEntry(
     val icon: String = "", val tag: String = "", val desc: String = "",
     val version: String = "", val size: String = "", val url: String = "",
     val vcode: Int = 0, val pkg: String = "", val whatsnew: String = "",
+    val shots: List<String> = emptyList(), val changes: List<Change> = emptyList(), val pick: String = "",
 )
+
+@Serializable
+data class Change(val v: String = "", val c: Int = 0, val t: String = "")
 
 val Bg = Color(0xFF14110E); val Card = Color(0xFF1C1814); val Txt = Color(0xFFEFE6D6)
 val Muted = Color(0xFFA39684); val Line = Color(0xFF2F2923); val Primary = Color(0xFFE3A598)
@@ -96,18 +106,6 @@ fun stateOf(ctx: Context, a: AppEntry): AppState {
 
 data class Dl(var id: Long, var prog: Float = -1f, var failed: Boolean = false)
 
-object DlHub {
-    val handled = mutableSetOf<Long>()
-    fun install(ctx: Context, dm: DownloadManager, id: Long) {
-        if (!handled.add(id)) return
-        val uri = dm.getUriForDownloadedFile(id) ?: return
-        ctx.startActivity(
-            Intent(Intent.ACTION_VIEW).setDataAndType(uri, "application/vnd.android.package-archive")
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        )
-    }
-}
-
 class DlReceiver : BroadcastReceiver() {
     override fun onReceive(ctx: Context, intent: Intent) {
         val id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
@@ -115,8 +113,9 @@ class DlReceiver : BroadcastReceiver() {
         val dm = ctx.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
         val q = dm.query(DownloadManager.Query().setFilterById(id))
         if (q.moveToFirst() && q.getInt(q.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS)) == DownloadManager.STATUS_SUCCESSFUL) {
-            DlHub.install(ctx, dm, id)
+            DlHub.ready(ctx, dm, id)
         }
+        else DlHub.failed(id)
         q.close()
     }
 }
@@ -131,6 +130,7 @@ fun enqueueApk(ctx: Context, a: AppEntry): Long {
         .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, file)
         .setMimeType("application/vnd.android.package-archive")
     return (ctx.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager).enqueue(req)
+        .also { DlHub.track(it, a.pkg == ctx.packageName) }
 }
 
 fun openApp(ctx: Context, pkg: String) {
@@ -138,16 +138,24 @@ fun openApp(ctx: Context, pkg: String) {
 }
 
 class MainActivity : ComponentActivity() {
+    val action = mutableStateOf<String?>(null)
     override fun onCreate(b: Bundle?) {
         super.onCreate(b)
         enableEdgeToEdge()
-        setContent { StoreApp() }
+        action.value = intent?.getStringExtra(ACTION_KEY)
+        Updates.schedule(this)
+        setContent { StoreApp(action) }
+    }
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        intent.getStringExtra(ACTION_KEY)?.let { action.value = it }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun StoreApp() {
+fun StoreApp(action: MutableState<String?>) {
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
         MaterialTheme(
             colorScheme = darkColorScheme(
@@ -163,34 +171,62 @@ fun StoreApp() {
             var refreshing by remember { mutableStateOf(false) }
             var sel by remember { mutableStateOf<AppEntry?>(null) }
             var query by remember { mutableStateOf("") }
-            var myVcode by remember { mutableStateOf(0) }
             var rev by remember { mutableStateOf(0) } // يُعاد حساب حالات التثبيت عند عودته
             val downloads = remember { mutableStateMapOf<String, Dl>() }
             var toast by remember { mutableStateOf<String?>(null) }
+            var notifOk by remember { mutableStateOf(canNotify(ctx)) }
+            var primeFor by remember { mutableStateOf<String?>(null) }
+            var showPrime by remember { mutableStateOf(false) }
+            val listState = rememberLazyListState()
+
+            val permLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
+                notifOk = canNotify(ctx); showPrime = false
+                if (ok) { StorePrefs.setNotify(ctx, true); toast = "سننبّهك فور صدور أي تحديث" }
+                else toast = "لن نرسل تنبيهات — تجد التحديثات دائماً أعلى المتجر"
+            }
+
+            fun enableNotify() {
+                StorePrefs.setNotify(ctx, true)
+                if (canNotify(ctx)) { notifOk = true; showPrime = false; toast = "تنبيهات التحديث مفعّلة"; return }
+                if (android.os.Build.VERSION.SDK_INT >= 33 &&
+                    (StorePrefs.primes(ctx) < 2 || (ctx as? ComponentActivity)?.shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS) == true)) {
+                    permLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                } else {
+                    // رُفض نهائياً أو أُطفئت من النظام: افتح إعدادات إشعارات المتجر مباشرة
+                    runCatching {
+                        ctx.startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, ctx.packageName))
+                    }
+                    showPrime = false
+                }
+            }
+
+            fun maybePrime(name: String?) {
+                if (canNotify(ctx) && StorePrefs.notifyOn(ctx)) return
+                val days3 = 3L * 24 * 3600 * 1000
+                if (StorePrefs.primes(ctx) >= 3 || System.currentTimeMillis() - StorePrefs.lastPrime(ctx) < days3) return
+                StorePrefs.primed(ctx); primeFor = name; showPrime = true
+            }
 
             fun reload(done: (() -> Unit)? = null) {
                 scope.launch {
                     runCatching { apps = fetchCatalog(); err = false }
                         .onFailure { err = true }
+                    apps?.let { list ->
+                        // ما يراه المستخدم داخل المتجر لا يحتاج إشعاراً لاحقاً
+                        StorePrefs.addNotified(ctx, outdatedApps(ctx, list).map { "${it.pkg}:${it.vcode}" })
+                        Updates.clear(ctx)
+                    }
                     done?.invoke()
                 }
             }
 
-            LaunchedEffect(Unit) {
-                @Suppress("DEPRECATION")
-                myVcode = runCatching {
-                    ctx.packageManager.getPackageInfo(ctx.packageName, 0).let {
-                        if (android.os.Build.VERSION.SDK_INT >= 28) it.longVersionCode.toInt() else it.versionCode
-                    }
-                }.getOrDefault(0)
-                reload()
-            }
+            LaunchedEffect(Unit) { reload() }
 
-            // إعادة تقييم حالة التثبيت عند العودة للتطبيق (بعد تثبيت/حذف)
+            // إعادة تقييم حالة التثبيت عند العودة للتطبيق (بعد تثبيت/حذف) ومتابعة طابور التثبيت
             DisposableEffect(Unit) {
                 val o = object : androidx.lifecycle.LifecycleEventObserver {
                     override fun onStateChanged(s: androidx.lifecycle.LifecycleOwner, e: androidx.lifecycle.Lifecycle.Event) {
-                        if (e == androidx.lifecycle.Lifecycle.Event.ON_RESUME) rev++
+                        if (e == androidx.lifecycle.Lifecycle.Event.ON_RESUME) { rev++; notifOk = canNotify(ctx); DlHub.resumed(ctx) }
                     }
                 }
                 (ctx as? androidx.lifecycle.LifecycleOwner)?.lifecycle?.addObserver(o)
@@ -209,58 +245,85 @@ fun StoreApp() {
                             val got = q.getLong(q.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR))
                             val tot = q.getLong(q.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES))
                             when (st) {
-                                DownloadManager.STATUS_SUCCESSFUL -> { downloads[slug] = d.copy(prog = 1f); DlHub.install(ctx, dm, d.id) }
-                                DownloadManager.STATUS_FAILED -> { downloads[slug] = d.copy(failed = true); toast = "تعذر تنزيل $slug" }
+                                DownloadManager.STATUS_SUCCESSFUL -> { downloads[slug] = d.copy(prog = 1f); DlHub.ready(ctx, dm, d.id) }
+                                DownloadManager.STATUS_FAILED -> { downloads[slug] = d.copy(failed = true); DlHub.failed(d.id); toast = "تعذر تنزيل $slug" }
                                 else -> if (tot > 0) downloads[slug] = d.copy(prog = got.toFloat() / tot.toFloat())
                             }
-                        } else downloads[slug] = d.copy(failed = true)
+                        } else { downloads[slug] = d.copy(failed = true); DlHub.failed(d.id) }
                         q.close()
                     }
                     delay(350)
                 }
             }
 
-            fun startDl(a: AppEntry) {
+            fun startDl(a: AppEntry, prime: Boolean = true) {
+                val busy = downloads[a.slug]?.let { !it.failed && it.prog < 1f } == true
+                if (busy) return
                 val id = enqueueApk(ctx, a)
                 downloads[a.slug] = Dl(id)
-                sel = null
+                if (prime) maybePrime(a.name)
             }
 
-            val self = apps?.firstOrNull { it.slug == "appstore" }
-            val selfUpd = self?.takeIf { it.vcode > myVcode && it.url.isNotEmpty() }
-            val updates = apps?.filter { it.slug != "appstore" && run { rev; stateOf(ctx, it) } == AppState.OUTDATED } ?: emptyList()
+            val updates = apps?.let { run { rev; outdatedApps(ctx, it) } } ?: emptyList()
+
+            fun updateAll() {
+                if (updates.isEmpty()) return
+                updates.forEach { startDl(it, prime = false) }
+                toast = if (updates.size == 1) "يُنزَّل ${updates[0].name}… يفتح المثبِّت تلقائياً"
+                else "تُنزَّل ${updates.size} تحديثات — يفتح المثبِّت لكل واحد بالتتابع"
+                maybePrime(null)
+            }
+
+            // إجراءات قادمة من الإشعار
+            LaunchedEffect(action.value, apps) {
+                val act = action.value ?: return@LaunchedEffect
+                if (apps == null) return@LaunchedEffect
+                sel = null; query = ""
+                listState.animateScrollToItem(0)
+                if (act == ACT_UPDATE_ALL) updateAll()
+                action.value = null
+            }
+
             val filtered = apps?.filter {
                 query.isBlank() || it.name.contains(query, true) || it.desc.contains(query, true)
             } ?: emptyList()
 
+            sel?.let { s ->
+                val a = apps?.firstOrNull { it.slug == s.slug } ?: s
+                val st = remember(rev, a.vcode) { stateOf(ctx, a) }
+                AppDetail(
+                    a, st, installedVcode(ctx, a.pkg), downloads[a.slug],
+                    onBack = { sel = null }, onDl = { startDl(a) },
+                    onCancel = {
+                        downloads[a.slug]?.let { d ->
+                            (ctx.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager).remove(d.id); DlHub.failed(d.id)
+                        }
+                        downloads.remove(a.slug)
+                    },
+                    onOpen = { openApp(ctx, a.pkg) },
+                )
+                return@MaterialTheme
+            }
+
             Scaffold(
                 containerColor = Bg,
-                topBar = { StoreBar(count = apps?.size ?: 0, onRefresh = { refreshing = true; reload { refreshing = false } }) },
+                topBar = {
+                    StoreBar(
+                        count = apps?.size ?: 0, notifOn = notifOk && StorePrefs.notifyOn(ctx),
+                        onBell = {
+                            if (notifOk && StorePrefs.notifyOn(ctx)) { StorePrefs.setNotify(ctx, false); notifOk = canNotify(ctx); rev++; toast = "أُوقفت تنبيهات التحديث" }
+                            else { primeFor = null; showPrime = true }
+                        },
+                        onRefresh = { refreshing = true; reload { refreshing = false } },
+                    )
+                },
                 snackbarHost = {
                     toast?.let {
+                        LaunchedEffect(it) { delay(4500); if (toast == it) toast = null }
                         Surface(Modifier.fillMaxWidth().padding(16.dp), color = Card, shape = RoundedCornerShape(12.dp), border = androidx.compose.foundation.BorderStroke(1.dp, Line)) {
                             Row(Modifier.padding(horizontal = 14.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Text(it, color = Muted, modifier = Modifier.weight(1f), fontSize = 13.sp)
                                 TextButton(onClick = { toast = null }) { Text("حسناً", color = Gold) }
-                            }
-                        }
-                    }
-                },
-                bottomBar = {
-                    selfUpd?.let { u ->
-                        Surface(
-                            color = Card, border = androidx.compose.foundation.BorderStroke(1.dp, Gold),
-                        ) {
-                            Row(
-                                Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 16.dp, vertical = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Icon(Icons.Filled.SystemUpdate, null, tint = Gold, modifier = Modifier.size(20.dp))
-                                Spacer(Modifier.width(8.dp))
-                                Text("تحديث المتجر متاح — ${u.version}", color = Gold, modifier = Modifier.weight(1f), fontSize = 14.sp)
-                                downloads[u.slug]?.takeIf { it.prog in 0f..0.99f }?.let { d ->
-                                    CircularProgressIndicator(progress = { d.prog }, modifier = Modifier.size(18.dp), color = Gold, strokeWidth = 2.dp)
-                                } ?: TextButton(onClick = { startDl(u) }) { Text("نزّل الآن", color = Primary) }
                             }
                         }
                     }
@@ -289,57 +352,19 @@ fun StoreApp() {
                         else -> CatalogView(
                             filtered, updates, query, { query = it }, downloads,
                             stateOf = { a -> rev; stateOf(ctx, a) },
-                            onPick = { sel = it }, onDl = ::startDl,
+                            listState = listState,
+                            pick = apps?.firstOrNull { it.pick.isNotEmpty() }?.takeIf { query.isBlank() },
+                            prime = if (showPrime) primeFor ?: "" else null,
+                            onEnableNotify = ::enableNotify, onLater = { showPrime = false },
+                            onUpdateAll = ::updateAll,
+                            onPick = { sel = it }, onDl = { startDl(it) },
                             onCancel = { a -> downloads[a.slug]?.let { d ->
                                 (ctx.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager).remove(d.id)
+                                DlHub.failed(d.id)
                                 downloads.remove(a.slug)
                             } },
                             onOpen = { a -> openApp(ctx, a.pkg) },
                         )
-                    }
-                }
-            }
-
-            // صفحة تفاصيل التطبيق
-            sel?.let { a ->
-                val st = remember(rev, a.vcode) { stateOf(ctx, a) }
-                val d = downloads[a.slug]
-                ModalBottomSheet(onDismissRequest = { sel = null }, containerColor = Card) {
-                    Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 28.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            AppIcon(a, 64); Spacer(Modifier.width(14.dp))
-                            Column(Modifier.weight(1f)) {
-                                Text(a.name, color = Txt, fontWeight = FontWeight.Bold, fontSize = 22.sp)
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    if (a.tag.isNotEmpty()) Pill(a.tag, Gold)
-                                    if (st == AppState.CURRENT) { Spacer(Modifier.width(6.dp)); Pill("مثبّت", Primary) }
-                                }
-                            }
-                        }
-                        Spacer(Modifier.height(14.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            if (a.version.isNotEmpty()) MetaChip("إصدار ${a.version}")
-                            if (a.size.isNotEmpty()) MetaChip(a.size)
-                            if (st != AppState.ABSENT) MetaChip("عندك v${installedVcode(ctx, a.pkg)}")
-                        }
-                        Spacer(Modifier.height(14.dp))
-                        Text(a.desc, color = Muted, fontSize = 14.sp, lineHeight = 24.sp)
-                        if (a.whatsnew.isNotEmpty()) {
-                            Spacer(Modifier.height(14.dp))
-                            Text("ما الجديد", color = Gold, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                            Text(a.whatsnew, color = Muted, fontSize = 13.sp, lineHeight = 20.sp)
-                        }
-                        Spacer(Modifier.height(20.dp))
-                        when {
-                            d?.failed == true -> ActionBtn("فشل التنزيل — أعد المحاولة", Icons.Filled.Refresh, Primary) { startDl(a) }
-                            d != null && d.prog < 1f -> DlProgress(d.prog) {
-                                (ctx.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager).remove(d.id); downloads.remove(a.slug)
-                            }
-                            a.url.isEmpty() -> ActionBtn("قريباً", Icons.Filled.Schedule, Muted, enabled = false) {}
-                            st == AppState.CURRENT -> ActionBtn("افتح", Icons.Filled.OpenInNew, Primary) { openApp(ctx, a.pkg) }
-                            st == AppState.OUTDATED -> ActionBtn("حدّث إلى ${a.version}", Icons.Filled.SystemUpdate, Gold) { startDl(a) }
-                            else -> ActionBtn("تنزيل وتثبيت", Icons.Filled.Download, Primary) { startDl(a) }
-                        }
                     }
                 }
             }
@@ -348,7 +373,7 @@ fun StoreApp() {
 }
 
 @Composable
-fun StoreBar(count: Int, onRefresh: () -> Unit) {
+fun StoreBar(count: Int, notifOn: Boolean, onBell: () -> Unit, onRefresh: () -> Unit) {
     Surface(color = Bg.copy(alpha = 0.95f)) {
         Row(
             Modifier.fillMaxWidth().statusBarsPadding().height(56.dp).padding(horizontal = 16.dp),
@@ -359,6 +384,13 @@ fun StoreBar(count: Int, onRefresh: () -> Unit) {
             Column(Modifier.weight(1f)) {
                 Text("App Store", color = Primary, fontWeight = FontWeight.Bold, fontSize = 21.sp)
                 if (count > 0) Text("$count تطبيقات", color = Muted, fontSize = 11.sp)
+            }
+            IconButton(onClick = onBell) {
+                Icon(
+                    if (notifOn) Icons.Filled.NotificationsActive else Icons.Filled.NotificationsOff,
+                    if (notifOn) "تنبيهات التحديث مفعّلة" else "فعّل تنبيهات التحديث",
+                    tint = if (notifOn) Gold else Muted,
+                )
             }
             IconButton(onClick = onRefresh) { Icon(Icons.Filled.Refresh, "تحديث", tint = Muted) }
         }
@@ -415,9 +447,11 @@ fun AppIcon(a: AppEntry, size: Int) {
 fun CatalogView(
     apps: List<AppEntry>, updates: List<AppEntry>, query: String, onQuery: (String) -> Unit,
     downloads: Map<String, Dl>, stateOf: (AppEntry) -> AppState,
+    listState: LazyListState, pick: AppEntry?, prime: String?,
+    onEnableNotify: () -> Unit, onLater: () -> Unit, onUpdateAll: () -> Unit,
     onPick: (AppEntry) -> Unit, onDl: (AppEntry) -> Unit, onCancel: (AppEntry) -> Unit, onOpen: (AppEntry) -> Unit,
 ) {
-    LazyColumn(Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
+    LazyColumn(Modifier.fillMaxSize().padding(horizontal = 16.dp), state = listState) {
         item {
             OutlinedTextField(
                 value = query, onValueChange = onQuery,
@@ -438,18 +472,30 @@ fun CatalogView(
                 ),
             )
         }
+        prime?.let { name -> item(key = "prime") { NotifyPrime(name.ifEmpty { null }, onEnableNotify, onLater) } }
         if (updates.isNotEmpty()) {
-            item {
-                Row(Modifier.padding(top = 16.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+            item(key = "uh") {
+                val active = updates.count { a -> downloads[a.slug]?.let { !it.failed && it.prog < 1f } == true }
+                Row(Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Filled.SystemUpdate, null, tint = Gold, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(6.dp))
-                    Text("تحديثات متاحة (${updates.size})", color = Gold, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                    Text("تحديثات متاحة (${updates.size})", color = Gold, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                    if (active > 0) Text("يُنزَّل $active من ${updates.size}", color = Muted, fontSize = 12.sp)
+                    else Button(
+                        onClick = onUpdateAll, modifier = Modifier.heightIn(min = 40.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Gold, contentColor = Card),
+                        shape = RoundedCornerShape(12.dp), contentPadding = PaddingValues(horizontal = 14.dp),
+                    ) {
+                        Icon(Icons.Filled.DownloadForOffline, null, modifier = Modifier.size(18.dp)); Spacer(Modifier.width(6.dp))
+                        Text(if (updates.size == 1) "حدّث" else "حدّث الكل", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    }
                 }
             }
             items(updates, key = { "u-" + it.slug }) { a ->
                 AppCard(a, stateOf(a), downloads[a.slug], onPick, onDl, onCancel, onOpen)
             }
         }
+        pick?.let { p -> item(key = "pick") { EditorPick(p, stateOf(p)) { onPick(p) } } }
         item { Text("التطبيقات", color = Gold, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 14.dp, bottom = 8.dp)) }
         items(apps.filter { updates.none { u -> u.slug == it.slug } }, key = { it.slug }) { a ->
             AppCard(a, stateOf(a), downloads[a.slug], onPick, onDl, onCancel, onOpen)
