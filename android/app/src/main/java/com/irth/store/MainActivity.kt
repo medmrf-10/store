@@ -9,7 +9,9 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -138,16 +140,32 @@ fun openApp(ctx: Context, pkg: String) {
 }
 
 class MainActivity : ComponentActivity() {
+    /** إجراء قادم من إشعار التحديث: "all" يبدأ تحديث الكل، "show" يعرض التحديثات. */
+    private val action = mutableStateOf<String?>(null)
+
     override fun onCreate(b: Bundle?) {
         super.onCreate(b)
         enableEdgeToEdge()
-        setContent { StoreApp() }
+        Updates.schedule(this)
+        action.value = actionOf(intent)
+        setContent { StoreApp(action) }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        action.value = actionOf(intent)
+    }
+
+    private fun actionOf(i: Intent?) = when {
+        i?.getBooleanExtra(Updates.EXTRA_UPDATE_ALL, false) == true -> "all"
+        i?.getBooleanExtra(Updates.EXTRA_SHOW_UPDATES, false) == true -> "show"
+        else -> null
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun StoreApp() {
+fun StoreApp(action: MutableState<String?>) {
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
         MaterialTheme(
             colorScheme = darkColorScheme(
@@ -167,10 +185,21 @@ fun StoreApp() {
             var rev by remember { mutableStateOf(0) } // يُعاد حساب حالات التثبيت عند عودته
             val downloads = remember { mutableStateMapOf<String, Dl>() }
             var toast by remember { mutableStateOf<String?>(null) }
+            var notifOn by remember { mutableStateOf(Updates.enabled(ctx) && Updates.canNotify(ctx)) }
+            var primeHidden by remember { mutableStateOf(Updates.prefs(ctx).getInt("primes", 0) >= 2) }
+            val notifLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
+                notifOn = ok && Updates.enabled(ctx); primeHidden = true
+                toast = if (ok) "سنُعلمك فور صدور تحديث لأي تطبيق مثبّت" else "الإشعارات مطفأة — فعّلها من إعدادات النظام متى شئت"
+            }
+            fun enableNotifs() {
+                Updates.setEnabled(ctx, true)
+                if (Updates.canNotify(ctx)) { notifOn = true; primeHidden = true; toast = "سنُعلمك فور صدور تحديث لأي تطبيق مثبّت" }
+                else if (android.os.Build.VERSION.SDK_INT >= 33) notifLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+            }
 
             fun reload(done: (() -> Unit)? = null) {
                 scope.launch {
-                    runCatching { apps = fetchCatalog(); err = false }
+                    runCatching { apps = fetchCatalog(); err = false; apps?.let { Updates.markSeen(ctx, it) } }
                         .onFailure { err = true }
                     done?.invoke()
                 }
@@ -226,9 +255,28 @@ fun StoreApp() {
                 sel = null
             }
 
+            fun updateAll(list: List<AppEntry>) {
+                val todo = list.filter { a -> downloads[a.slug]?.let { it.failed || it.prog >= 1f } ?: true }
+                todo.forEach { startDl(it) }
+                toast = if (todo.isEmpty()) "كل تطبيقاتك محدّثة" else "بدأ تحديث ${todo.size} — ستُطلب موافقة التثبيت لكل تطبيق"
+            }
+
             val self = apps?.firstOrNull { it.slug == "appstore" }
             val selfUpd = self?.takeIf { it.vcode > myVcode && it.url.isNotEmpty() }
             val updates = apps?.filter { it.slug != "appstore" && run { rev; stateOf(ctx, it) } == AppState.OUTDATED } ?: emptyList()
+            val installedAny = apps?.any { it.slug != "appstore" && run { rev; stateOf(ctx, it) } != AppState.ABSENT } == true
+
+            // إجراء من الإشعار: ينتظر وصول الكتالوج ثم ينفّذ
+            LaunchedEffect(apps, action.value) {
+                val act = action.value ?: return@LaunchedEffect
+                val list = apps ?: return@LaunchedEffect
+                val outs = Updates.outdated(ctx, list).sortedBy { it.slug == "appstore" }
+                if (act == "all") updateAll(outs)
+                else if (outs.isEmpty()) toast = "كل تطبيقاتك محدّثة"
+                action.value = null
+            }
+            LaunchedEffect(rev) { notifOn = Updates.enabled(ctx) && Updates.canNotify(ctx) }
+
             val filtered = apps?.filter {
                 query.isBlank() || it.name.contains(query, true) || it.desc.contains(query, true)
             } ?: emptyList()
@@ -295,6 +343,17 @@ fun StoreApp() {
                                 downloads.remove(a.slug)
                             } },
                             onOpen = { a -> openApp(ctx, a.pkg) },
+                            onUpdateAll = { updateAll(updates) },
+                            prime = if (!notifOn && !primeHidden && installedAny) ({
+                                NotifPrime(onEnable = ::enableNotifs, onLater = {
+                                    val pr = Updates.prefs(ctx); pr.edit().putInt("primes", pr.getInt("primes", 0) + 1).apply(); primeHidden = true
+                                })
+                            }) else null,
+                            footer = {
+                                NotifSetting(notifOn, Updates.lastCheck(ctx)) { on ->
+                                    if (on) enableNotifs() else { Updates.setEnabled(ctx, false); notifOn = false }
+                                }
+                            },
                         )
                     }
                 }
@@ -416,6 +475,7 @@ fun CatalogView(
     apps: List<AppEntry>, updates: List<AppEntry>, query: String, onQuery: (String) -> Unit,
     downloads: Map<String, Dl>, stateOf: (AppEntry) -> AppState,
     onPick: (AppEntry) -> Unit, onDl: (AppEntry) -> Unit, onCancel: (AppEntry) -> Unit, onOpen: (AppEntry) -> Unit,
+    onUpdateAll: () -> Unit = {}, prime: (@Composable () -> Unit)? = null, footer: @Composable () -> Unit = {},
 ) {
     LazyColumn(Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
         item {
@@ -443,13 +503,16 @@ fun CatalogView(
                 Row(Modifier.padding(top = 16.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Filled.SystemUpdate, null, tint = Gold, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(6.dp))
-                    Text("تحديثات متاحة (${updates.size})", color = Gold, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                    Text("تحديثات متاحة (${updates.size})", color = Gold, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                    if (updates.size > 1 && updates.none { u -> downloads[u.slug]?.let { !it.failed && it.prog < 1f } == true })
+                        SmallBtn("حدّث الكل", accent = true, onOpen = onUpdateAll)
                 }
             }
             items(updates, key = { "u-" + it.slug }) { a ->
                 AppCard(a, stateOf(a), downloads[a.slug], onPick, onDl, onCancel, onOpen)
             }
         }
+        prime?.let { item { Box(Modifier.padding(top = 14.dp)) { it() } } }
         item { Text("التطبيقات", color = Gold, fontSize = 13.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 14.dp, bottom = 8.dp)) }
         items(apps.filter { updates.none { u -> u.slug == it.slug } }, key = { it.slug }) { a ->
             AppCard(a, stateOf(a), downloads[a.slug], onPick, onDl, onCancel, onOpen)
@@ -460,6 +523,7 @@ fun CatalogView(
                 Text(if (query.isBlank()) "لا تطبيقات بعد" else "لا نتائج لـ«$query»", color = Muted, modifier = Modifier.padding(top = 10.dp))
             }
         }
+        item { footer() }
         item {
             Text(
                 "من مشروع إرث — محتوى علمي موثوق في جيبك",
@@ -526,5 +590,60 @@ fun SmallBtn(label: String, accent: Boolean = false, onOpen: () -> Unit) {
         border = if (accent) androidx.compose.foundation.BorderStroke(1.dp, Gold) else null,
     ) {
         Text(label, color = if (accent) Gold else Txt, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 16.dp, vertical = 7.dp))
+    }
+}
+
+/** تمهيد الإذن: يُعرض فقط لمن ثبّت تطبيقاً من المتجر، بفائدة محددة، و«ليس الآن» لا يستهلك نافذة النظام. */
+@Composable
+fun NotifPrime(onEnable: () -> Unit, onLater: () -> Unit) {
+    Column(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Card)
+            .border(1.dp, Gold.copy(alpha = 0.5f), RoundedCornerShape(16.dp)).padding(14.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Filled.NotificationsActive, null, tint = Gold, modifier = Modifier.size(22.dp))
+            Spacer(Modifier.width(10.dp))
+            Text("اعرف لحظة صدور تحديث لتطبيقاتك", color = Txt, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+        }
+        Text(
+            "إشعار واحد لكل إصدار جديد من تطبيق مثبّت، وزر «حدّث الكل» داخله — بلا إعلانات.",
+            color = Muted, fontSize = 13.sp, lineHeight = 20.sp, modifier = Modifier.padding(top = 6.dp),
+        )
+        Row(Modifier.fillMaxWidth().padding(top = 10.dp), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
+            TextButton(onClick = onLater, modifier = Modifier.heightIn(min = 48.dp)) { Text("ليس الآن", color = Muted) }
+            Spacer(Modifier.width(6.dp))
+            Button(
+                onClick = onEnable, modifier = Modifier.heightIn(min = 48.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Gold, contentColor = Card),
+            ) { Text("نبّهني", fontWeight = FontWeight.Bold) }
+        }
+    }
+}
+
+/** مركز التفضيلات: مفتاح إشعارات التحديث + آخر فحص في الخلفية. */
+@Composable
+fun NotifSetting(on: Boolean, last: Long, onToggle: (Boolean) -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().padding(top = 18.dp).clip(RoundedCornerShape(14.dp)).background(Card)
+            .border(1.dp, Line, RoundedCornerShape(14.dp)).clickable { onToggle(!on) }
+            .heightIn(min = 56.dp).padding(horizontal = 14.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(if (on) Icons.Filled.NotificationsActive else Icons.Filled.NotificationsOff, null, tint = if (on) Gold else Muted)
+        Spacer(Modifier.width(10.dp))
+        Column(Modifier.weight(1f)) {
+            Text("إشعارات التحديثات", color = Txt, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            val sub = when {
+                !on -> "موقوفة — ستجد التحديثات هنا عند فتح المتجر"
+                last > 0 -> "فحص تلقائي كل ٦ ساعات · آخر فحص " +
+                    android.text.format.DateUtils.getRelativeTimeSpanString(last, System.currentTimeMillis(), android.text.format.DateUtils.MINUTE_IN_MILLIS)
+                else -> "فحص تلقائي كل ٦ ساعات"
+            }
+            Text(sub, color = Muted, fontSize = 12.sp)
+        }
+        Switch(
+            checked = on, onCheckedChange = onToggle,
+            colors = SwitchDefaults.colors(checkedThumbColor = Card, checkedTrackColor = Gold, uncheckedTrackColor = Soft, uncheckedThumbColor = Muted),
+        )
     }
 }
