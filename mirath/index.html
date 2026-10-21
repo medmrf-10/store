@@ -153,9 +153,9 @@ main{display:block;padding-top:calc(56px + env(safe-area-inset-top))}
 /* ==== عدّل هنا عند صدور الحزمة ==== */
 const APP={
   name:'ميراث',
-  version:'1.46',
+  version:'1.47',
   size:'18.3 MB',
-  url:'../apk/mirath-1.46.apk',
+  url:'../apk/mirath-1.47.apk',
   btn:'تنزيل APK'
 };
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -178,7 +178,7 @@ document.getElementById('b-theme').onclick=e=>{e.stopPropagation();TH.hidden=!TH
 document.addEventListener('click',e=>{if(!e.target.closest('#themes,#b-theme'))TH.hidden=true});
 (function(){
   document.getElementById('aname').textContent=APP.name;
-  const meta=[APP.version?'إصدار '+APP.version:'1.46',APP.size].filter(Boolean).join(' · ');
+  const meta=[APP.version?'إصدار '+APP.version:'1.47',APP.size].filter(Boolean).join(' · ');
   document.getElementById('aver').textContent=meta;
   const dl=document.getElementById('adl');
   if(APP.url){dl.classList.remove('soon');dl.href=APP.url;
