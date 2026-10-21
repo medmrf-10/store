@@ -1,7 +1,7 @@
 {
-  "name": "App Store",
-  "short_name": "App Store",
-  "description": "تطبيقاتنا على أندرويد — كل تطبيق له صفحته ورابط تنزيله المباشر.",
+  "name": "ميراث",
+  "short_name": "ميراث",
+  "description": "تطبيق ميراث — رابط التنزيل المباشر.",
   "lang": "ar",
   "dir": "rtl",
   "start_url": "./",
