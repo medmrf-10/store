@@ -1,4 +1,4 @@
-/* كتالوج المتجر على الويب — صفحة واحدة: App Store فقط */
+/* كتالوج المتجر على الويب — تطبيق واحد: ميراث */
 const APPS=[
- {slug:"appstore",name:"App Store",page:"",icon:"icons/icon-192.png",tag:"الأصلي",desc:"متجرنا الأصلي لأندرويد — تصفّح التطبيقات ونزّلها وثبّتها مباشرة بلا متصفح.",version:"1.3",size:"17.5 MB",url:"apk/appstore-1.3.apk",pkg:"com.irth.store",vcode:4}
+ {slug:"mirath",name:"ميراث",page:"mirath/",icon:"mirath/icons/icon-192.png",tag:"التطبيق",desc:"مكتبة الدروس والسلاسل العلمية في جيبك — خطب مقسّمة، قراءة متزامنة مع الصوت، وبلا اتصال.",version:"1.47",size:"17.4 MB",url:"apk/mirath-1.47.apk",pkg:"com.irth.mirath",vcode:48}
 ];
