@@ -1,4 +1,4 @@
-const C='irthstore-v2';
+const C='irthstore-v3';
 const PRECACHE=['./','./index.html','./apps.js','./apps.json','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png'];
 const NETWORK_FIRST=[/\/$/,/\/index\.html$/,/apps\.(js|json)$/,/manifest\.webmanifest$/];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(PRECACHE)).then(()=>self.skipWaiting()))});
