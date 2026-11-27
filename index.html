@@ -4,11 +4,16 @@
 <script>try{document.documentElement.dataset.theme=localStorage.getItem('irth.theme')||'night'}catch(e){}</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#14110E">
-<link rel="manifest" href="manifest.webmanifest">
-<title>ميراث — تحميل التطبيق</title>
-<link rel="icon" href="icons/icon-192.png?v=2" type="image/png">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="theme-color" id="meta-theme" content="#14110E">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="المتجر">
+<meta name="description" content="متجر التطبيقات المباشر — تحميل وتحديث تطبيقات أندرويد مع دعم التحديث التلقائي.">
+<link rel="manifest" href="manifest.webmanifest?v=3">
+<title>المتجر — متجر التطبيقات</title>
+<link rel="icon" href="icons/icon-192.png?v=3" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=3">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Noto+Naskh+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -41,59 +46,86 @@
 }
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
-body{background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:16px}
+body{background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:16px;-webkit-tap-highlight-color:transparent}
 a{color:var(--primary)}
 @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @keyframes fade{from{opacity:0}to{opacity:1}}
 
-.app{min-height:100dvh;max-width:var(--app-max);margin:0 auto;padding:0 0 48px}
+.app{min-height:100dvh;max-width:var(--app-max);margin:0 auto;padding:0 0 96px}
 .top{position:fixed;top:0;left:50%;transform:translateX(-50%);width:min(100%,var(--app-max));z-index:6;
-  padding-top:env(safe-area-inset-top);
+  padding-top:env(safe-area-inset-top);border-bottom:1px solid color-mix(in srgb,var(--line) 70%,transparent);
   background:var(--glass);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
-.trow{display:flex;align-items:center;justify-content:space-between;height:52px;padding:0 16px 0 6px}
-main{display:block;padding-top:calc(56px + env(safe-area-inset-top))}
+.trow{display:flex;align-items:center;justify-content:space-between;height:54px;padding:0 16px 0 8px}
+.tact{display:flex;align-items:center;gap:4px}
+main{display:block;padding-top:calc(58px + env(safe-area-inset-top))}
 .brand{display:flex;align-items:center;gap:10px;color:inherit;text-decoration:none}
-.brand img{width:30px;height:30px;border-radius:9px}
-.brand b{font:700 25px/1 var(--font-display);color:var(--primary)}
+.brand img{width:32px;height:32px;border-radius:9px;box-shadow:0 0 0 1px var(--line)}
+.brand b{font:700 24px/1 var(--font-display);color:var(--primary)}
+.tbtn{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px;border-radius:var(--r-pill);
+  border:1px solid var(--gold);background:var(--soft);color:var(--gold);font:inherit;font-size:12.5px;font-weight:600;cursor:pointer}
+.tbtn:active{background:var(--press)}
+.tbtn svg{width:15px;height:15px}
+.tbtn[hidden]{display:none}
 .ib{flex:none;width:44px;height:44px;display:grid;place-items:center;border-radius:50%;
   color:var(--muted);border:0;background:none;font:inherit;cursor:pointer}
 .ib:active{background:var(--press)}
-.themes{position:fixed;z-index:9;left:10px;top:calc(56px + env(safe-area-inset-top));min-width:170px;padding:6px;
+.themes{position:fixed;z-index:9;left:10px;top:calc(58px + env(safe-area-inset-top));min-width:170px;padding:6px;
   background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:0 12px 30px rgba(0,0,0,.18);animation:fade .15s ease-out}
 .themes button{display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border:0;border-radius:10px;
   background:none;color:inherit;font:inherit;font-size:15px;text-align:right;cursor:pointer}
 .themes button[aria-pressed='true']{background:var(--press);font-weight:600}
 .themes i{flex:none;width:22px;height:22px;border-radius:50%;border:1px solid rgba(127,127,127,.35)}
 
-.hero{text-align:center;padding:30px 20px 4px;animation:rise .5s var(--ease) both}
-.hero h1{font:700 34px/1.3 var(--font-display);margin:0}
-.hero p{margin:8px auto 0;max-width:400px;color:var(--muted);font-size:14.5px;line-height:1.9}
+.hero{text-align:center;padding:28px 20px 8px;animation:rise .5s var(--ease) both}
+.hero-ic{width:76px;height:76px;margin:0 auto 14px;border-radius:21px;overflow:hidden;
+  box-shadow:0 0 0 2px var(--card),0 0 0 3.5px var(--gold),0 14px 32px rgba(0,0,0,.28)}
+.hero-ic img{width:100%;height:100%;object-fit:cover;display:block}
+.hero h1{font:700 32px/1.3 var(--font-display);margin:0}
+.hero p{margin:8px auto 0;max-width:410px;color:var(--muted);font-size:14.5px;line-height:1.9}
+.pills{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:14px}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:var(--r-pill);
+  background:var(--card);border:1px solid var(--line);color:var(--muted);font-size:12px}
+.pill b{color:var(--gold);font-weight:600}
 
-.gttl{margin:24px 16px 8px;color:var(--gold);font-size:13px;font-weight:700}
+.gttl{display:flex;align-items:center;justify-content:space-between;margin:24px 16px 10px;color:var(--gold);font-size:13px;font-weight:700}
+.gttl span{color:var(--muted);font-weight:500;font-size:12px}
 .list{margin:0 16px}
-.arow{display:flex;align-items:center;gap:12px;padding:14px;background:var(--card);border:1px solid var(--line);
-  border-radius:var(--r-2);margin-bottom:10px;text-decoration:none;color:inherit;animation:rise .45s var(--ease) both;animation-delay:calc(var(--i,0)*50ms)}
+.acard{background:var(--card);border:1px solid var(--line);border-radius:var(--r-2);margin-bottom:12px;overflow:hidden;
+  animation:rise .45s var(--ease) both;animation-delay:calc(var(--i,0)*50ms)}
+.arow{display:flex;align-items:center;gap:12px;padding:14px;text-decoration:none;color:inherit}
 .arow:active{background:var(--press)}
-.arow .aic{flex:none;width:56px;height:56px;border-radius:15px;overflow:hidden;background:var(--soft);box-shadow:0 0 0 1px var(--line)}
-.arow .aic img{width:100%;height:100%;object-fit:cover}
+.arow .aic{flex:none;width:58px;height:58px;border-radius:16px;overflow:hidden;background:var(--soft);box-shadow:0 0 0 1px var(--line)}
+.arow .aic img{width:100%;height:100%;object-fit:cover;display:block}
 .arow .atx{flex:1;min-width:0}
+.arow .anm-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .arow .anm{font:700 19px/1.35 var(--font-display)}
 .arow .ads{display:block;color:var(--muted);font-size:12.5px;line-height:1.8;margin-top:2px;
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.arow .amt{color:var(--muted);font-size:11.5px;margin-top:4px}
+.arow .amt{color:var(--muted);font-size:11.5px;margin-top:5px}
 .arow .amt i{font-style:normal;color:var(--gold)}
-.sttag{flex:none;font-size:10.5px;color:var(--gold);border:1px solid var(--gold);border-radius:var(--r-pill);padding:1px 8px;white-space:nowrap}
+.sttag{flex:none;font-size:10.5px;color:var(--gold);border:1px solid color-mix(in srgb,var(--gold) 65%,transparent);
+  background:color-mix(in srgb,var(--gold) 10%,transparent);border-radius:var(--r-pill);padding:1px 8px;white-space:nowrap}
 .chev{flex:none;color:var(--muted)}
 .chev svg{width:20px;height:20px}
+.afoot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;
+  border-top:1px solid var(--line);background:color-mix(in srgb,var(--soft) 45%,transparent)}
+.awhat{flex:1;min-width:0;color:var(--muted);font-size:12px;line-height:1.6;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.adl{flex:none;display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 14px;border-radius:var(--r-pill);
+  background:var(--primary);color:var(--card);font:inherit;font-size:13px;font-weight:600;text-decoration:none}
+.adl:active{opacity:.85}
+.adl svg{width:15px;height:15px}
 .empty{padding:46px 20px;text-align:center;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:var(--r-2)}
-.foot{margin:26px 16px 0;padding:14px 16px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-2);
+.foot{margin:24px 16px 0;padding:14px 16px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-2);
   color:var(--muted);font-size:12.5px;line-height:1.9;text-align:center}
-/* لافتة التثبيت */
-.pb{position:fixed;z-index:8;left:50%;transform:translateX(-50%) translateY(120%);bottom:14px;width:min(calc(100% - 24px),calc(var(--app-max) - 24px));
+.foot b{color:var(--text)}
+
+/* لافتة تثبيت المتجر */
+.pb{position:fixed;z-index:8;left:50%;transform:translateX(-50%) translateY(130%);bottom:14px;width:min(calc(100% - 24px),calc(var(--app-max) - 24px));
   display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--card);border:1px solid var(--gold);border-radius:18px;
-  box-shadow:0 14px 40px rgba(0,0,0,.35);transition:transform .3s var(--ease)}
+  box-shadow:0 14px 40px rgba(0,0,0,.38);transition:transform .3s var(--ease)}
 .pb.show{transform:translateX(-50%) translateY(0)}
-.pb img{width:44px;height:44px;border-radius:12px;flex:none}
+.pb img{width:44px;height:44px;border-radius:12px;flex:none;box-shadow:0 0 0 1px var(--line)}
 .pb .pt{flex:1;min-width:0}
 .pb .pt b{display:block;font:700 15px/1.4 var(--font-display)}
 .pb .pt span{color:var(--muted);font-size:12px}
@@ -104,8 +136,9 @@ main{display:block;padding-top:calc(56px + env(safe-area-inset-top))}
 .pb .px{flex:none;width:30px;height:30px;display:grid;place-items:center;border:0;border-radius:50%;background:none;color:var(--muted);cursor:pointer;padding:0}
 .pb .px:active{background:var(--press)}
 .pb .px svg{width:15px;height:15px}
-.tost{position:fixed;z-index:10;left:50%;bottom:90px;transform:translateX(-50%);padding:10px 18px;background:var(--card);border:1px solid var(--line);
-  border-radius:var(--r-pill);color:var(--text);font-size:13.5px;opacity:0;pointer-events:none;transition:opacity .2s}
+.tost{position:fixed;z-index:10;left:50%;bottom:88px;transform:translateX(-50%);max-width:min(90vw,420px);text-align:center;
+  padding:10px 18px;background:var(--card);border:1px solid var(--gold);
+  border-radius:var(--r-pill);color:var(--text);font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s}
 .tost.show{opacity:1}
 </style>
 </head>
@@ -113,8 +146,14 @@ main{display:block;padding-top:calc(56px + env(safe-area-inset-top))}
 <div class="app">
   <header class="top">
     <div class="trow">
-      <a class="brand" href="./"><img src="mirath/icons/icon-192.png" alt=""><b>ميراث</b></a>
-      <button class="ib" id="b-theme" aria-label="الشكل"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.2 5.2l1.6 1.6M17.2 17.2l1.6 1.6M18.8 5.2l-1.6 1.6M6.8 17.2l-1.6 1.6"/></svg></button>
+      <a class="brand" href="./"><img src="icons/icon-192.png?v=3" alt="أيقونة المتجر"><b>المتجر</b></a>
+      <div class="tact">
+        <button class="tbtn" id="b-install" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v11M7.5 10.5 12 15l4.5-4.5M4.5 19h15"/></svg>
+          تثبيت المتجر
+        </button>
+        <button class="ib" id="b-theme" aria-label="الشكل"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.2 5.2l1.6 1.6M17.2 17.2l1.6 1.6M18.8 5.2l-1.6 1.6M6.8 17.2l-1.6 1.6"/></svg></button>
+      </div>
     </div>
   </header>
   <div class="themes" id="themes" hidden>
@@ -125,56 +164,144 @@ main{display:block;padding-top:calc(56px + env(safe-area-inset-top))}
   </div>
   <main>
     <section class="hero">
-      <h1>ميراث</h1>
-      <p>تطبيق واحد: ميراث — رابط التنزيل المباشر لأحدث إصدار.</p>
+      <div class="hero-ic"><img src="icons/icon-512.png?v=3" alt="أيقونة المتجر"></div>
+      <h1>متجر التطبيقات</h1>
+      <p>منصة التحميل المباشر لتطبيقات أندرويد — كل تطبيق يُنشر هنا مرتبط بكتالوج التحديث التلقائي.</p>
+      <div class="pills">
+        <span class="pill"><b>PWA</b> قابل للتثبيت</span>
+        <span class="pill"><b>تحديث تلقائي</b> لجميع التطبيقات</span>
+      </div>
     </section>
-    <div class="gttl">التطبيق</div>
+    <div class="gttl">التطبيقات المتاحة <span id="acount"></span></div>
     <div class="list" id="list"></div>
+    <div class="foot">
+      <b>التحديث التلقائي:</b> تتحقق جميع التطبيقات المنشورة في هذا المتجر من أحدث إصدار عبر الكتالوج الموحّد وتُشعرك فور توفر تحديث جديد.
+    </div>
   </main>
 </div>
+
 <div class="pb" id="pb" hidden>
-  <img src="icons/icon-192.png" alt="">
-  <div class="pt"><b>ثبّت المتجر</b><span>متجرنا في شاشتك الرئيسية بلمسة واحدة</span></div>
+  <img src="icons/icon-192.png?v=3" alt="">
+  <div class="pt"><b>ثبّت المتجر</b><span>أضفه إلى شاشتك الرئيسية بلمسة واحدة</span></div>
   <button class="pin" id="pin"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v11M7.5 10.5 12 15l4.5-4.5M4.5 19h15"/></svg>تثبيت</button>
-  <button class="px" id="px" aria-label="إغلاق"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+  <button class="px" id="px" aria-label="إغلاق"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
 </div>
 <div class="tost" id="tost"></div>
+
 <script src="apps.js"></script>
 <script>
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const THEME_COLORS={night:'#14110E',paper:'#F4EEE2',white:'#FFFFFF',dark:'#18191A'};
+const metaTheme=document.getElementById('meta-theme');
 const TH=document.getElementById('themes');
 const saved=localStorage.getItem('irth.theme')||'night';
+if(metaTheme&&THEME_COLORS[saved])metaTheme.content=THEME_COLORS[saved];
 document.querySelectorAll('#themes button').forEach(b=>{
   b.setAttribute('aria-pressed',b.dataset.t===saved?'true':'false');
-  b.onclick=e=>{e.stopPropagation();document.documentElement.dataset.theme=b.dataset.t;localStorage.setItem('irth.theme',b.dataset.t);
-    document.querySelectorAll('#themes button').forEach(x=>x.setAttribute('aria-pressed',x===b?'true':'false'));TH.hidden=true};
+  b.onclick=e=>{
+    e.stopPropagation();
+    document.documentElement.dataset.theme=b.dataset.t;
+    localStorage.setItem('irth.theme',b.dataset.t);
+    if(metaTheme&&THEME_COLORS[b.dataset.t])metaTheme.content=THEME_COLORS[b.dataset.t];
+    document.querySelectorAll('#themes button').forEach(x=>x.setAttribute('aria-pressed',x===b?'true':'false'));
+    TH.hidden=true;
+  };
 });
 document.getElementById('b-theme').onclick=e=>{e.stopPropagation();TH.hidden=!TH.hidden};
 document.addEventListener('click',e=>{if(!e.target.closest('#themes,#b-theme'))TH.hidden=true});
-/* — لافتة التثبيت — */
+
+/* — تسجيل عامل الخدمة وإدارة تثبيت PWA — */
 let DEFER=null;
-window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();DEFER=e});
-if('serviceWorker' in navigator&&location.protocol!=='file:')navigator.serviceWorker.register('sw.js').catch(()=>{});
-const PB=document.getElementById('pb'),TOST=document.getElementById('tost');
-function toast(t){TOST.textContent=t;TOST.classList.add('show');setTimeout(()=>TOST.classList.remove('show'),2400)}
+const PB=document.getElementById('pb'),TOST=document.getElementById('tost'),BINST=document.getElementById('b-install');
+function toast(t){TOST.textContent=t;TOST.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>TOST.classList.remove('show'),3200)}
 function installed(){return matchMedia('(display-mode: standalone)').matches||navigator.standalone===true}
-try{if(!installed()&&localStorage.getItem('store.pb.dismiss')!=='1'){setTimeout(()=>{PB.hidden=false;requestAnimationFrame(()=>PB.classList.add('show'))},1400)}}catch(e){}
-document.getElementById('px').onclick=()=>{PB.classList.remove('show');setTimeout(()=>PB.hidden=true,300);try{localStorage.setItem('store.pb.dismiss','1')}catch(e){}};
-document.getElementById('pin').onclick=async()=>{
-  if(DEFER){DEFER.prompt();const r=await DEFER.userChoice;if(r.outcome==='accepted'){PB.classList.remove('show');setTimeout(()=>PB.hidden=true,300)}DEFER=null;return}
-  toast('من قائمة المتصفح اختر: إضافة إلى الشاشة الرئيسية');
-};
-document.getElementById('list').innerHTML=(APPS||[]).map((a,i)=>{
-  const meta=[a.version?'إصدار '+a.version:'',a.size,a.url?'':'قريباً'].filter(Boolean).join(' · ');
-  const dest=a.page||a.url||'';
-  return `<a class="arow" style="--i:${i}" href="${esc(dest)}"${a.page?'':' download'}>
-    <span class="aic"><img src="${esc(a.icon)}" alt=""></span>
-    <span class="atx"><span class="anm">${esc(a.name)}</span>
-    <span class="ads">${esc(a.desc||'')}</span>
-    ${meta?`<span class="amt"><i>${esc(meta)}</i></span>`:''}</span>
-    ${a.tag?`<span class="sttag">${esc(a.tag)}</span>`:''}
-    <span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m14 6-6 6 6 6"/></svg></span>
-  </a>`}).join('')||'<div class="empty">لا تطبيقات بعد</div>';
+function showBanner(){if(installed())return;PB.hidden=false;requestAnimationFrame(()=>PB.classList.add('show'))}
+function hideBanner(){PB.classList.remove('show');setTimeout(()=>PB.hidden=true,300)}
+
+if('serviceWorker' in navigator&&location.protocol!=='file:'){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+
+if(!installed()){
+  BINST.hidden=false;
+  try{if(localStorage.getItem('store.pb.dismiss')!=='1')setTimeout(showBanner,1200)}catch(e){}
+}
+
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault();
+  DEFER=e;
+  BINST.hidden=false;
+  try{if(localStorage.getItem('store.pb.dismiss')!=='1')showBanner()}catch(err){}
+});
+
+window.addEventListener('appinstalled',()=>{
+  DEFER=null;
+  BINST.hidden=true;
+  hideBanner();
+  toast('تم تثبيت المتجر على جهازك بنجاح');
+});
+
+async function triggerInstall(){
+  if(DEFER){
+    DEFER.prompt();
+    const r=await DEFER.userChoice;
+    if(r.outcome==='accepted'){hideBanner();BINST.hidden=true}
+    DEFER=null;
+    return;
+  }
+  const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent);
+  if(isIOS){
+    toast('في سفاري: اضغط زر المشاركة ثم «إضافة إلى الشاشة الرئيسية»');
+  }else{
+    toast('من قائمة المتصفح (⋮) اختر «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية»');
+  }
+}
+
+document.getElementById('pin').onclick=triggerInstall;
+BINST.onclick=triggerInstall;
+document.getElementById('px').onclick=()=>{hideBanner();try{localStorage.setItem('store.pb.dismiss','1')}catch(e){}};
+
+/* — عرض التطبيقات من مصدر الحقيقة الموحد apps.json — */
+function renderApps(items){
+  const arr=Array.isArray(items)?items:[];
+  const cnt=document.getElementById('acount');
+  if(cnt)cnt.textContent=arr.length?arr.length+' تطبيق':'';
+  document.getElementById('list').innerHTML=arr.map((a,i)=>{
+    const meta=[
+      a.version?'إصدار '+a.version:'',
+      a.size,
+      a.updated?a.updated:'',
+      a.url?'':'قريباً'
+    ].filter(Boolean).join(' · ');
+    const dest=a.page||a.url||'#';
+    const hasAuto=a.autoUpdate!==false&&Boolean(a.vcode);
+    const badge=hasAuto?'تحديث تلقائي':(a.tag||'');
+    return `<article class="acard" style="--i:${i}">
+      <a class="arow" href="${esc(dest)}"${a.page?'':' download'}>
+        <span class="aic"><img src="${esc(a.icon||'icons/icon-192.png?v=3')}" alt="${esc(a.name)}"></span>
+        <span class="atx">
+          <span class="anm-row"><span class="anm">${esc(a.name)}</span>${badge?`<span class="sttag">${esc(badge)}</span>`:''}</span>
+          <span class="ads">${esc(a.desc||'')}</span>
+          ${meta?`<span class="amt"><i>${esc(meta)}</i></span>`:''}
+        </span>
+        <span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m14 6-6 6 6 6"/></svg></span>
+      </a>
+      ${a.url?`<div class="afoot">
+        <span class="awhat" title="${esc(a.whatsnew||'')}">${esc(a.whatsnew||'أحدث إصدار متاح للتنزيل المباشر')}</span>
+        <a class="adl" href="${esc(a.url)}" download>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v11M7.5 10.5 12 15l4.5-4.5M4.5 19h15"/></svg>
+          تنزيل
+        </a>
+      </div>`:''}
+    </article>`;
+  }).join('')||'<div class="empty">لا تطبيقات بعد</div>';
+}
+
+if(typeof APPS!=='undefined')renderApps(APPS);
+fetch('apps.json',{cache:'no-cache'})
+  .then(r=>r.ok?r.json():null)
+  .then(d=>{if(d&&Array.isArray(d.apps))renderApps(d.apps)})
+  .catch(()=>{});
 </script>
 </body>
 </html>
