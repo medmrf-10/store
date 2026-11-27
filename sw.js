@@ -1,10 +1,10 @@
-const C='irthstore-v7';
+const C='irthstore-v8';
 const PRECACHE=[
   './',
   './index.html',
   './apps.json',
   './apps.js',
-  './manifest.webmanifest',
+  './manifest.webmanifest?v=4',
   './icons/icon-192.png?v=3',
   './icons/icon-512.png?v=3',
   './icons/icon-maskable-192.png?v=3',

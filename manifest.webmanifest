@@ -2,7 +2,6 @@
   "id": "/store/",
   "name": "متجر التطبيقات",
   "short_name": "المتجر",
-  "description": "متجر التطبيقات المباشر — تحميل وتحديث تطبيقات أندرويد مع دعم التحديث التلقائي.",
   "lang": "ar",
   "dir": "rtl",
   "start_url": "./",
@@ -10,9 +9,9 @@
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui"],
   "orientation": "portrait-primary",
-  "background_color": "#14110E",
-  "theme_color": "#14110E",
-  "categories": ["utilities", "education"],
+  "background_color": "#F4EEE2",
+  "theme_color": "#F4EEE2",
+  "categories": ["utilities"],
   "icons": [
     {
       "src": "icons/icon-192.png?v=3",
