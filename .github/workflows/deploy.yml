@@ -25,7 +25,15 @@ jobs:
           cp index.html dist/404.html
           cp apps.json apps.js manifest.webmanifest sw.js dist/
           cp -r icons dist/
-          if [ -d apk ]; then cp -r apk dist/; fi
+          for d in */; do
+            name="${d%/}"
+            case "$name" in
+              dist|android|auto-update|icons) continue ;;
+            esac
+            if [ -f "$d/index.html" ] || [ "$name" = "apk" ]; then
+              cp -r "$name" dist/
+            fi
+          done
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

@@ -1,1 +1,19 @@
-const APPS=[];
+const APPS=[
+  {
+    slug:"dialer",
+    name:"الاتصال",
+    page:"dialer/",
+    icon:"dialer/icon-192.png",
+    tag:"تحديث تلقائي",
+    desc:"إدارة المكالمات وجهات الاتصال وسجل الاتصالات بواجهة سريعة ونظيفة.",
+    version:"1.0.1",
+    size:"399 KB",
+    url:"https://github.com/medmrf-10/store/releases/download/dialer-v1.0.1/dialer-1.0.1.apk",
+    vcode:2,
+    pkg:"io.medmrf.dialer",
+    sha256:"7d437b413f0b5f8b701726c5e357aeeb7f6051a35d5b61f157f34e1fdea9252a",
+    whatsnew:"الإصدار الترحيبي المبدئي بدعم التحديث التلقائي المباشر",
+    updated:"2026-11-27",
+    autoUpdate:true
+  }
+];
