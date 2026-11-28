@@ -1,4 +1,4 @@
-const C='irthstore-v9';
+const C='irthstore-v10';
 const PRECACHE=[
   './',
   './index.html',
